@@ -1,0 +1,50 @@
+import { Webhook } from "svix";
+import User from "../../../models/user";
+import connectDB from "../../../config/db";
+import { headers } from "next/headers";
+import { NextRequest } from "next/server";
+
+export async function POST(req, res) {
+  const WH = new Webhook(process.env.SIGNING_SECRET);
+  const headerPayload = await headers();
+  const svixHeaders = {
+    "sivx-id": headerPayload.get("sivx-id"),
+    "svix-timestamp": headerPayload.get("svix-timestamp"),
+    "svix-signature": headerPayload.get("svix-signature "),
+  };
+
+  // Get the payload and verify it
+  const payload = await req.json();
+  const body = JSON.stringify(payload);
+  const { data, type } = WH.verify(body, svixHeaders);
+
+  // Prepare the user data to be saved in the database
+
+  const userData = {
+    _id: data.id,
+    email: data.email_addresses[0].email_address,
+    name: `${data.first_name} ${data.last_name}`,
+    image: data.image_url,
+  };
+
+  await connectDB();
+
+  switch (type) {
+    case "user.created":
+      await User.create(userData);
+      break;
+
+    case "user.updated":
+      await User.findByIdAndUpdate(data.id, userData);
+      break;
+
+    case "user.deleted":
+      await User.findById(userData);
+      break;
+
+    default:
+      break;
+  }
+
+  return NextRequest.json({ message: "Event Received" });
+}

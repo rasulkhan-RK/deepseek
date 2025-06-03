@@ -2,13 +2,13 @@ import { Webhook } from "svix";
 import User from "../../../models/user";
 import connectDB from "../../../config/db";
 import { headers } from "next/headers";
-import { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(req, res) {
+export async function POST(req) {
   const WH = new Webhook(process.env.SIGNING_SECRET);
   const headerPayload = await headers();
   const svixHeaders = {
-    "sivx-id": headerPayload.get("sivx-id"),
+    "svix-id": headerPayload.get("svix-id"),
     "svix-timestamp": headerPayload.get("svix-timestamp"),
     "svix-signature": headerPayload.get("svix-signature"),
   };
@@ -46,5 +46,5 @@ export async function POST(req, res) {
       break;
   }
 
-  return NextRequest.json({ message: "Event Received" });
+  return NextResponse.json({ message: "Event Received" });
 }
